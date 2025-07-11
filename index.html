@@ -34,6 +34,10 @@
       background-color: #5a189a;
     }
   </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -45,14 +49,8 @@
 
   <div id="app"></div>
 
-  <!-- Vue.js -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getFirestore, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-
+  <script>
+    // ✅ Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyB8LyRyV5c7RoUx5H_v5pxdzDUJvDPx0m4",
       authDomain: "lexuscare-crm.firebaseapp.com",
@@ -62,33 +60,31 @@
       appId: "1:867403802789:web:f0f46bc3a98bef08edc54c"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
     // ✅ Export Leads to CSV
-    window.exportLeads = async function () {
-      const querySnapshot = await getDocs(collection(db, "leads"));
-      const leads = [];
-      querySnapshot.forEach(doc => leads.push(doc.data()));
+    async function exportLeads() {
+      const snapshot = await db.collection("leads").get();
+      const leads = snapshot.docs.map(doc => doc.data());
 
-      let csvContent = "data:text/csv;charset=utf-8,Name,Phone,Service,Follow-up Date\n";
+      let csv = "Name,Phone,Service,Follow-up Date\n";
       leads.forEach(lead => {
-        csvContent += `${lead.name},${lead.phone},${lead.service},${lead.followupDateTime}\n`;
+        csv += `${lead.name},${lead.phone},${lead.service},${lead.followupDateTime || ''}\n`;
       });
 
-      const encodedUri = encodeURI(csvContent);
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
       link.setAttribute("download", "lexuscare_leads.csv");
       document.body.appendChild(link);
       link.click();
-    };
+    }
 
-    // ✅ Backup Download (JSON)
-    window.downloadBackup = async function () {
-      const querySnapshot = await getDocs(collection(db, "leads"));
-      const leads = [];
-      querySnapshot.forEach(doc => leads.push(doc.data()));
+    // ✅ Download JSON Backup
+    async function downloadBackup() {
+      const snapshot = await db.collection("leads").get();
+      const leads = snapshot.docs.map(doc => doc.data());
 
       const blob = new Blob([JSON.stringify(leads, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -96,16 +92,15 @@
       link.href = url;
       link.download = "lexuscare_backup.json";
       link.click();
-    };
+    }
 
-    // ✅ Alert Today's Follow-ups
-    window.checkFollowUps = async function () {
-      const querySnapshot = await getDocs(collection(db, "leads"));
-      const allLeads = [];
-      querySnapshot.forEach(doc => allLeads.push(doc.data()));
+    // ✅ Show Today’s Follow-ups
+    async function checkFollowUps() {
+      const snapshot = await db.collection("leads").get();
+      const leads = snapshot.docs.map(doc => doc.data());
 
       const today = new Date().toISOString().slice(0, 10);
-      const todayLeads = allLeads.filter(lead =>
+      const todayLeads = leads.filter(lead =>
         lead.followupDateTime && lead.followupDateTime.slice(0, 10) === today
       );
 
@@ -118,7 +113,7 @@
       } else {
         alert("✅ No follow-ups scheduled for today.");
       }
-    };
+    }
   </script>
 </body>
 </html>
