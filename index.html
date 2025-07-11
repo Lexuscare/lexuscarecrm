@@ -11,46 +11,126 @@
       background-color: #fbefff;
       margin: 0;
       padding: 20px;
-      text-align: center;
     }
 
     h1 {
       color: #d63384;
-      margin-bottom: 20px;
+      text-align: center;
     }
 
-    .btn {
+    .form {
+      max-width: 600px;
+      margin: 0 auto 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    .form label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .form input, .form select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .form button {
+      margin-top: 15px;
       background-color: #7b2cbf;
       color: white;
       border: none;
-      padding: 10px 15px;
-      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
       border-radius: 6px;
-      font-size: 14px;
       cursor: pointer;
     }
 
-    .btn:hover {
+    .form button:hover {
       background-color: #5a189a;
     }
+
+    table {
+      width: 90%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #d63384;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
   </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore-compat.js"></script>
 </head>
-
 <body>
   <h1>LexusCare CRM Dashboard</h1>
+  <div class="form">
+    <label>Name</label>
+    <input type="text" id="name">
 
-  <button class="btn" onclick="exportLeads()">📥 Export Leads to CSV</button>
-  <button class="btn" onclick="downloadBackup()">📦 Download Backup Now</button>
-  <button class="btn" onclick="checkFollowUps()">📌 Today Follow-ups</button>
+    <label>Phone</label>
+    <input type="text" id="phone">
 
-  <div id="app"></div>
+    <label>Service</label>
+    <select id="service">
+      <option>Eyebrow Microblading</option>
+      <option>Lip Tinting/Neutralization</option>
+      <option>Hair Extensions</option>
+      <option>Laser Hair Removal</option>
+      <option>Skin Treatments</option>
+    </select>
 
-  <script>
-    // ✅ Initialize Firebase
+    <label>Status</label>
+    <select id="status">
+      <option>Interested</option>
+      <option>Booked</option>
+      <option>Done</option>
+    </select>
+
+    <label>Follow-up DateTime</label>
+    <input type="datetime-local" id="followup">
+
+    <button onclick="addLead()">➕ Add Lead</button>
+  </div>
+
+  <table id="leadTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone (WhatsApp)</th>
+        <th>Service</th>
+        <th>Status</th>
+        <th>Follow-up</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Vue.js + Firebase SDKs -->
+  <script src="https://unpkg.com/vue@3"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyB8LyRyV5c7RoUx5H_v5pxdzDUJvDPx0m4",
       authDomain: "lexuscare-crm.firebaseapp.com",
@@ -60,60 +140,57 @@
       appId: "1:867403802789:web:f0f46bc3a98bef08edc54c"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    // ✅ Export Leads to CSV
-    async function exportLeads() {
-      const snapshot = await db.collection("leads").get();
-      const leads = snapshot.docs.map(doc => doc.data());
+    async function loadLeads() {
+      const snapshot = await getDocs(collection(db, "leads"));
+      const tbody = document.querySelector("#leadTable tbody");
+      tbody.innerHTML = "";
 
-      let csv = "Name,Phone,Service,Follow-up Date\n";
-      leads.forEach(lead => {
-        csv += `${lead.name},${lead.phone},${lead.service},${lead.followupDateTime || ''}\n`;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+
+        const whatsappLink = `https://wa.me/91${data.phone}`;
+
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td><a href="${whatsappLink}" target="_blank">${data.phone}</a></td>
+          <td>${data.service}</td>
+          <td>${data.status}</td>
+          <td>${data.followupDateTime}</td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    }
+
+    window.addLead = async function () {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const service = document.getElementById("service").value;
+      const status = document.getElementById("status").value;
+      const followupDateTime = document.getElementById("followup").value;
+
+      if (!name || !phone || !followupDateTime) {
+        alert("Please fill all required fields.");
+        return;
+      }
+
+      await addDoc(collection(db, "leads"), {
+        name,
+        phone,
+        service,
+        status,
+        followupDateTime
       });
 
-      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "lexuscare_leads.csv");
-      document.body.appendChild(link);
-      link.click();
-    }
+      alert("✅ Lead added!");
+      loadLeads();
+    };
 
-    // ✅ Download JSON Backup
-    async function downloadBackup() {
-      const snapshot = await db.collection("leads").get();
-      const leads = snapshot.docs.map(doc => doc.data());
-
-      const blob = new Blob([JSON.stringify(leads, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "lexuscare_backup.json";
-      link.click();
-    }
-
-    // ✅ Show Today’s Follow-ups
-    async function checkFollowUps() {
-      const snapshot = await db.collection("leads").get();
-      const leads = snapshot.docs.map(doc => doc.data());
-
-      const today = new Date().toISOString().slice(0, 10);
-      const todayLeads = leads.filter(lead =>
-        lead.followupDateTime && lead.followupDateTime.slice(0, 10) === today
-      );
-
-      if (todayLeads.length > 0) {
-        let message = "📌 Today's Follow-ups:\n\n";
-        todayLeads.forEach((lead, i) => {
-          message += `${i + 1}. ${lead.name} - ${lead.service} at ${lead.followupDateTime.slice(11, 16)}\n`;
-        });
-        alert(message);
-      } else {
-        alert("✅ No follow-ups scheduled for today.");
-      }
-    }
+    loadLeads();
   </script>
 </body>
 </html>
