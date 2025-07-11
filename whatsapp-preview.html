@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Message Preview</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fdf4ff;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #7b2cbf;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    select, textarea, input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #7b2cbf;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #5a189a;
+    }
+
+    .template-actions {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .template-actions input {
+      width: 48%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📲 WhatsApp Message Preview</h1>
+
+    <label>Select Template:</label>
+    <select id="templateSelect" onchange="loadTemplate()">
+      <option value="">-- Choose a Template --</option>
+    </select>
+
+    <label>Preview / Edit Message:</label>
+    <textarea id="messageBox" rows="6" placeholder="Type or select a message..."></textarea>
+
+    <label>Attach Image (optional):</label>
+    <input type="file" id="imageInput" accept="image/*" />
+
+    <div>
+      <button onclick="sendWhatsApp()">✅ Send Message</button>
+      <button onclick="skipWhatsApp()">❌ Skip</button>
+    </div>
+
+    <hr>
+
+    <h3>📝 Create New Template</h3>
+    <div class="template-actions">
+      <input type="text" id="newTemplateName" placeholder="Template Name (Ex: Booking Reminder)" />
+      <button onclick="saveTemplate()">💾 Save</button>
+    </div>
+    <textarea id="newTemplateText" rows="4" placeholder="Enter message text..."></textarea>
+
+    <h3>🗑️ Delete Selected Template</h3>
+    <button onclick="deleteTemplate()">🗑 Delete Template</button>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB8LyRyV5c7RoUx5H_v5pxdzDUJvDPx0m4",
+      authDomain: "lexuscare-crm.firebaseapp.com",
+      projectId: "lexuscare-crm",
+      storageBucket: "lexuscare-crm.appspot.com",
+      messagingSenderId: "867403802789",
+      appId: "1:867403802789:web:f0f46bc3a98bef08edc54c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Load Templates on page load
+    window.onload = async () => {
+      const snapshot = await getDocs(collection(db, "whatsappTemplates"));
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.text = doc.id;
+        document.getElementById("templateSelect").appendChild(option);
+      });
+    };
+
+    window.loadTemplate = async () => {
+      const id = document.getElementById("templateSelect").value;
+      if (!id) return;
+      const snapshot = await getDocs(collection(db, "whatsappTemplates"));
+      snapshot.forEach(doc => {
+        if (doc.id === id) {
+          document.getElementById("messageBox").value = doc.data().text;
+        }
+      });
+    };
+
+    window.saveTemplate = async () => {
+      const name = document.getElementById("newTemplateName").value.trim();
+      const text = document.getElementById("newTemplateText").value.trim();
+      if (!name || !text) return alert("Enter both name and message.");
+      await setDoc(doc(db, "whatsappTemplates", name), { text });
+      alert("✅ Template Saved");
+      location.reload();
+    };
+
+    window.deleteTemplate = async () => {
+      const id = document.getElementById("templateSelect").value;
+      if (!id) return alert("Select template to delete.");
+      await deleteDoc(doc(db, "whatsappTemplates", id));
+      alert("🗑 Template Deleted");
+      location.reload();
+    };
+
+    window.sendWhatsApp = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const customerName = urlParams.get("name") || "Customer";
+  const number = prompt("📞 Enter 10-digit phone number:");
+  if (!number || number.length !== 10) return alert("Invalid number");
+
+  let msg = document.getElementById("messageBox").value;
+  msg = msg.replace(/\[name\]/gi, customerName); // Replace [name] with real name
+
+  const link = `https://wa.me/91${number}?text=${encodeURIComponent(msg)}`;
+  window.open(link, "_blank");
+};
+
+
+
+    window.skipWhatsApp = () => {
+      alert("Skipped WhatsApp message!");
+      window.location.href = "followups.html"; // go back
+    };
+  </script>
+</body>
+</html>
