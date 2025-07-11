@@ -4,119 +4,89 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>LexusCare CRM Dashboard</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fbefff;
+      background-color: #fff0f6;
       margin: 0;
       padding: 20px;
-    }
-
-    h1 {
-      color: #d63384;
       text-align: center;
     }
-
-    .form {
-      max-width: 600px;
-      margin: 0 auto 30px;
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #ccc;
+    h1 {
+      color: #c2255c;
+      margin-bottom: 20px;
     }
-
-    .form label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
+    .input-group {
+      margin-bottom: 10px;
     }
-
-    .form input, .form select {
-      width: 100%;
+    input, select {
       padding: 8px;
-      margin-top: 4px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      width: 240px;
+      margin: 4px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
     }
-
-    .form button {
-      margin-top: 15px;
-      background-color: #7b2cbf;
+    button {
+      background-color: #9d4edd;
       color: white;
+      padding: 10px 16px;
       border: none;
-      padding: 10px 20px;
-      font-size: 16px;
       border-radius: 6px;
       cursor: pointer;
+      margin-top: 10px;
     }
-
-    .form button:hover {
-      background-color: #5a189a;
+    button:hover {
+      background-color: #7b2cbf;
     }
-
     table {
-      width: 90%;
-      margin: 0 auto;
+      width: 100%;
+      margin-top: 30px;
       border-collapse: collapse;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
     }
-
     th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
+      border: 1px solid #ccc;
+      padding: 8px;
     }
-
     th {
-      background-color: #d63384;
-      color: white;
+      background-color: #f0cfe6;
     }
-
-    tr:hover {
-      background-color: #f1f1f1;
+    a.whatsapp-link {
+      color: green;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
-  <h1>LexusCare CRM Dashboard</h1>
-  <div class="form">
-    <label>Name</label>
-    <input type="text" id="name">
+  <h1>LexusCare CRM</h1>
 
-    <label>Phone</label>
-    <input type="text" id="phone">
-
-    <label>Service</label>
+  <div class="input-group">
+    <input id="name" placeholder="Name" />
+    <input id="phone" placeholder="Phone" />
     <select id="service">
+      <option value="">Select Service</option>
       <option>Eyebrow Microblading</option>
       <option>Lip Tinting/Neutralization</option>
       <option>Hair Extensions</option>
       <option>Laser Hair Removal</option>
       <option>Skin Treatments</option>
     </select>
-
-    <label>Status</label>
     <select id="status">
-      <option>Interested</option>
-      <option>Booked</option>
+      <option value="">Select Status</option>
+      <option>New</option>
+      <option>In Progress</option>
       <option>Done</option>
+      <option>Follow-up</option>
     </select>
-
-    <label>Follow-up DateTime</label>
-    <input type="datetime-local" id="followup">
-
+    <input type="datetime-local" id="followup" />
+    <br/>
     <button onclick="addLead()">➕ Add Lead</button>
   </div>
 
-  <table id="leadTable">
+  <table id="leadsTable">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Phone (WhatsApp)</th>
+        <th>Phone</th>
         <th>Service</th>
         <th>Status</th>
         <th>Follow-up</th>
@@ -125,8 +95,7 @@
     <tbody></tbody>
   </table>
 
-  <!-- Vue.js + Firebase SDKs -->
-  <script src="https://unpkg.com/vue@3"></script>
+  <!-- Firebase SDK & Vue -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
@@ -135,7 +104,7 @@
       apiKey: "AIzaSyB8LyRyV5c7RoUx5H_v5pxdzDUJvDPx0m4",
       authDomain: "lexuscare-crm.firebaseapp.com",
       projectId: "lexuscare-crm",
-      storageBucket: "lexuscare-crm.firebasestorage.app",
+      storageBucket: "lexuscare-crm.appspot.com",
       messagingSenderId: "867403802789",
       appId: "1:867403802789:web:f0f46bc3a98bef08edc54c"
     };
@@ -143,52 +112,44 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    async function loadLeads() {
-      const snapshot = await getDocs(collection(db, "leads"));
-      const tbody = document.querySelector("#leadTable tbody");
-      tbody.innerHTML = "";
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = document.createElement("tr");
-
-        const whatsappLink = `https://wa.me/91${data.phone}`;
-
-        row.innerHTML = `
-          <td>${data.name}</td>
-          <td><a href="${whatsappLink}" target="_blank">${data.phone}</a></td>
-          <td>${data.service}</td>
-          <td>${data.status}</td>
-          <td>${data.followupDateTime}</td>
-        `;
-
-        tbody.appendChild(row);
-      });
-    }
-
+    // Add lead to Firestore
     window.addLead = async function () {
       const name = document.getElementById("name").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const service = document.getElementById("service").value;
       const status = document.getElementById("status").value;
-      const followupDateTime = document.getElementById("followup").value;
+      const followup = document.getElementById("followup").value;
 
-      if (!name || !phone || !followupDateTime) {
-        alert("Please fill all required fields.");
+      if (!name || !phone || !service || !status || !followup) {
+        alert("❗ Please fill all fields");
         return;
       }
 
       await addDoc(collection(db, "leads"), {
-        name,
-        phone,
-        service,
-        status,
-        followupDateTime
+        name, phone, service, status, followupDateTime: followup
       });
 
       alert("✅ Lead added!");
-      loadLeads();
+      location.reload();
     };
+
+    // Load existing leads
+    async function loadLeads() {
+      const snapshot = await getDocs(collection(db, "leads"));
+      const tbody = document.querySelector("#leadsTable tbody");
+      snapshot.forEach(doc => {
+        const lead = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${lead.name}</td>
+          <td><a href="https://wa.me/91${lead.phone}" target="_blank" class="whatsapp-link">${lead.phone}</a></td>
+          <td>${lead.service}</td>
+          <td>${lead.status}</td>
+          <td>${lead.followupDateTime ? lead.followupDateTime.replace("T", " ") : ""}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
 
     loadLeads();
   </script>
