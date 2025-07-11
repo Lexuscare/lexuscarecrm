@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexusCare CRM Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#cc3366" />
+
+  <style>
+    /* Add global styles or reset styles here */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5; /* Light grey background */
+      margin: 0;
+      padding: 0;
+    }
+    #app {
+      max-width: 600px; /* Max width for mobile responsiveness */
+      margin: 20px auto;
+      padding: 15px;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+    h2 {
+      color: #cc3366; /* Your theme color */
+      font-size: 1.5em;
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    h3 {
+        color: #555;
+        font-size: 1.2em;
+        margin-top: 0;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #cc3366;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #a32b52;
+    }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="datetime-local"], select, textarea {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .lead-item {
+        border: 1px solid #eee;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        background-color: #fafafa;
+    }
+    .lead-item .actions button {
+        padding: 5px 10px;
+        font-size: 0.8em;
+    }
+    .whatsapp-link-input {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 8px 10px;
+        width: calc(100% - 20px);
+        margin-bottom: 15px;
+        box-sizing: border-box;
+    }
+    .template-item {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+    .template-item strong {
+        color: #333;
+    }
+    .template-item p {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+        white-space: pre-wrap; /* Preserve line breaks */
+    }
+    .template-item .actions button {
+        background-color: #6c757d;
+        margin-left: 5px;
+    }
+    .template-item .actions button:hover {
+        background-color: #5a6268;
+    }
+    .template-item .actions button.delete {
+        background-color: #dc3545;
+    }
+    .template-item .actions button.delete:hover {
+        background-color: #c82333;
+    }
+
+    /* Styles for the new WhatsApp Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 400px;
+      position: relative;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      color: #cc3366;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .modal-content label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+    .modal-content select, .modal-content textarea {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .modal-content .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px; /* Space between buttons */
+        margin-top: 20px;
+    }
+    .modal-content .modal-buttons button {
+        padding: 10px 15px;
+        font-size: 0.9em;
+        margin: 0; /* Remove default button margin */
+    }
+    .modal-content .modal-buttons button.close-button {
+        background-color: #6c757d;
+    }
+    .modal-content .modal-buttons button.close-button:hover {
+        background-color: #5a6268;
+    }
+    .modal-content .modal-buttons button.direct-send-button {
+        background-color: #28a745; /* Green for direct send */
+    }
+    .modal-content .modal-buttons button.direct-send-button:hover {
+        background-color: #218838;
+    }
+  </style>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => {
+        console.log('✅ Service Worker registered!');
+      });
+    }
+
+    // Today's Follow-up Alert (from original index.html.html) - This will still pop up initially
+    window.addEventListener('load', () => {
+      const leads = JSON.parse(localStorage.getItem('leads') || '[]');
+      const today = new Date().toISOString().slice(0, 10);
+      const todayLeads = leads.filter(lead => lead.followupDateTime && lead.followupDateTime.slice(0, 10) === today);
+      if (todayLeads.length > 0) {
+        let message = '📌 Today\'s Follow-ups:\n\n';
+        todayLeads.forEach((lead, index) => {
+          message += `${index + 1}. ${lead.name} - ${lead.service} at ${lead.followupDateTime.slice(11, 16)}\n`;
+        });
+        alert(message);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="app">
+    <h1>LexusCare CRM Dashboard</h1>
+
+    <div class="button-group">
+      <button @click="exportToCSV">⬇️ Export Leads to CSV</button>
+      <button @click="downloadManualBackup">🗂️ Download Backup Now</button>
+    </div>
+
+    <div class="card">
+      <h2>📊 CRM Overview</h2>
+      <p>Total Leads: {{ leads.length }}</p>
+    </div>
+
+    <div class="card">
+      <h2>➕ Add New Lead</h2>
+      <form @submit.prevent="addLead">
+        <label for="name">Name</label>
+        <input type="text" id="name" v-model="newLead.name" placeholder="Enter client's name" required>
+
+        <label for="service">SERVICE</label>
+        <select id="service" v-model="newLead.service" required>
+          <option value="">Select a service</option>
+          <option value="Eyebrow Microblading">Eyebrow Microblading</option>
+          <option value="Lip Tinting">Lip Tinting</option>
+          <option value="Hair Extensions">Hair Extensions</option>
+          <option value="Laser Hair Removal">Laser Hair Removal</option>
+          <option value="Skin Treatments">Skin Treatments</option>
+        </select>
+
+        <label for="status">Status</label>
+        <select id="status" v-model="newLead.status" required>
+          <option value="">Select status</option>
+          <option value="New Lead">New Lead</option>
+          <option value="Interested">Interested</option>
+          <option value="Not Interested">Not Interested</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="Converted">Converted</option>
+        </select>
+
+        <label for="priority">Priority</label>
+        <select id="priority" v-model="newLead.priority" required>
+          <option value="">Select priority</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+
+        <label for="followupDate">Follow-up Date & Time</label>
+        <input type="datetime-local" id="followupDate" v-model="newLead.followupDateTime">
+
+        <label for="whatsappLink">WhatsApp Link (Optional)</label>
+        <input type="text" id="whatsappLink" v-model="newLead.whatsappLink" class="whatsapp-link-input" placeholder="Enter number (e.g., 8341234321) or full link">
+
+        <button type="submit">➕ Add Lead</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>🔍 All Leads</h2>
+      <div style="display: flex; margin-bottom: 15px;">
+        <input type="text" placeholder="Search by name..." style="flex-grow: 1; margin-right: 10px;">
+        <select style="width: auto;">
+          <option>All Statuses</option>
+        </select>
+        <select style="width: auto; margin-left: 10px;">
+          <option>All Services</option>
+        </select>
+      </div>
+      <div v-if="leads.length === 0">
+        <p>No leads added yet. Start by adding a new lead!</p>
+      </div>
+      <div v-else>
+        <div class="lead-item" v-for="lead in leads" :key="lead.id">
+          <p><strong>{{ lead.name }}</strong> - {{ lead.service }}</p>
+          <p>Current Status: {{ lead.status }} | Scheduled For: {{ formatDate(lead.followupDateTime) }}</p>
+          <p>Lead added: {{ formatDate(lead.createdDate, 'short') }}</p>
+          <div class="actions">
+            <button @click="openWhatsApp(lead)">💬 What's App</button>
+            <button @click="updateStatus(lead)">📝 Update Status</button>
+            <button @click="editLead(lead)">✏️ Edit</button>
+            <button @click="deleteLead(lead)">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔴 Overdue Follow-ups</h2>
+      <div v-if="overdueFollowups.length === 0">
+        <p>No overdue follow-ups.</p>
+      </div>
+      <div v-else>
+        <div class="lead-item" v-for="lead in overdueFollowups" :key="lead.id">
+          <p><strong>{{ lead.name }}</strong> - {{ lead.service }}</p>
+          <p>Current Status: {{ lead.status }} | Scheduled For: {{ formatDate(lead.followupDateTime) }}</p>
+          <p>Lead added: {{ formatDate(lead.createdDate, 'short') }}</p>
+          <div class="actions">
+            <button @click="openWhatsApp(lead)">💬 What's App</button>
+            <button @click="updateStatus(lead)">📝 Update Status</button>
+            <button @click="editLead(lead)">✏️ Edit</button>
+            <button @click="deleteLead(lead)">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⭐ Today's Follow-ups</h2>
+      <div v-if="todayFollowups.length === 0">
+        <p>No follow-ups scheduled for today.</p>
+      </div>
+      <div v-else>
+        <div class="lead-item" v-for="lead in todayFollowups" :key="lead.id">
+          <p><strong>{{ lead.name }}</strong> - {{ lead.service }}</p>
+          <p>Current Status: {{ lead.status }} | Scheduled For: {{ formatDate(lead.followupDateTime) }}</p>
+          <p>Lead added: {{ formatDate(lead.createdDate, 'short') }}</p>
+          <div class="actions">
+            <button @click="openWhatsApp(lead)">💬 What's App</button>
+            <button @click="updateStatus(lead)">📝 Update Status</button>
+            <button @click="editLead(lead)">✏️ Edit</button>
+            <button @click="deleteLead(lead)">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🗓️ Upcoming Follow-ups</h2>
+      <div v-if="upcomingFollowups.length === 0">
+        <p>No upcoming follow-ups.</p>
+      </div>
+      <div v-else>
+        <div class="lead-item" v-for="lead in upcomingFollowups" :key="lead.id">
+          <p><strong>{{ lead.name }}</strong> - {{ lead.service }}</p>
+          <p>Current Status: {{ lead.status }} | Scheduled For: {{ formatDate(lead.followupDateTime) }}</p>
+          <p>Lead added: {{ formatDate(lead.createdDate, 'short') }}</p>
+          <div class="actions">
+            <button @click="openWhatsApp(lead)">💬 What's App</button>
+            <button @click="updateStatus(lead)">📝 Update Status</button>
+            <button @click="editLead(lead)">✏️ Edit</button>
+            <button @click="deleteLead(lead)">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+        <h2>📝 WhatsApp Message Templates</h2>
+        <form @submit.prevent="currentEditingTemplate ? saveEditedTemplate() : addTemplate()">
+            <label for="templateName">Template Name:</label>
+            <input type="text" id="templateName" v-model="templateName" placeholder="e.g., Offer Message" required>
+
+            <label for="templateContent">Template Content (Use {leadName} for name):</label>
+            <textarea id="templateContent" v-model="templateContent" rows="5" placeholder="Hi {leadName}, check out our new offer!" required></textarea>
+
+            <button type="submit">{{ currentEditingTemplate ? 'Save Changes' : 'Add Template' }}</button>
+            <button type="button" v-if="currentEditingTemplate" @click="cancelEditTemplate" style="background-color: #6c757d;">Cancel</button>
+        </form>
+
+        <h3 style="margin-top: 30px;">Saved Templates:</h3>
+        <div v-if="whatsappTemplates.length === 0">
+            <p>No templates added yet. Add your first template above!</p>
+        </div>
+        <div v-else>
+            <div class="template-item" v-for="template in whatsappTemplates" :key="template.id">
+                <strong>{{ template.name }}</strong>
+                <p>{{ template.content }}</p>
+                <div class="actions">
+                    <button @click="editTemplate(template)">✏️ Edit</button>
+                    <button @click="deleteTemplate(template.id)" class="delete">🗑️ Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" v-if="showWhatsappModal">
+        <div class="modal-content">
+            <h3>Send WhatsApp to {{ selectedLeadForWhatsapp ? selectedLeadForWhatsapp.name : '' }}</h3>
+
+            <label for="selectTemplate">Choose a Template:</label>
+            <select id="selectTemplate" v-model="selectedTemplateId" @change="applyTemplate">
+                <option value="">-- Select or Type Message --</option>
+                <option v-for="template in whatsappTemplates" :key="template.id" :value="template.id">
+                    {{ template.name }}
+                </option>
+            </select>
+
+            <label for="messageContent">Message:</label>
+            <textarea id="messageContent" v-model="messageToSend" rows="8" placeholder="Type your message here..."></textarea>
+
+            <div class="modal-buttons">
+                <button @click="closeWhatsappModal" class="close-button">Close</button>
+                <button @click="sendDirectWhatsapp" class="direct-send-button">Send Direct (No Message)</button>
+                <button @click="sendWhatsappWithMessage">Send WhatsApp</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+  <script>
+    const { createApp, ref, onMounted, computed, watch } = Vue;
+
+    createApp({
+      setup() {
+        const leads = ref([]);
+        const newLead = ref({
+          id: null,
+          name: '',
+          service: '',
+          status: '',
+          priority: '',
+          followupDateTime: '',
+          whatsappLink: '',
+          createdDate: new Date().toISOString(),
+          history: [] // NEW: Initialize history array
+        });
+
+        const whatsappTemplates = ref([]);
+        const templateName = ref('');
+        const templateContent = ref('');
+        const currentEditingTemplate = ref(null);
+
+        const showWhatsappModal = ref(false);
+        const selectedLeadForWhatsapp = ref(null);
+        const selectedTemplateId = ref('');
+        const messageToSend = ref('');
+
+
+        // Function to load leads from Local Storage
+        const loadLeads = () => {
+          const storedLeads = localStorage.getItem('leads');
+          if (storedLeads) {
+            leads.value = JSON.parse(storedLeads);
+            // Ensure history array exists for older leads
+            leads.value.forEach(lead => {
+              if (!lead.history) {
+                lead.history = [];
+              }
+            });
+          }
+        };
+
+        // Function to save leads to Local Storage
+        const saveLeads = () => {
+          localStorage.setItem('leads', JSON.stringify(leads.value));
+        };
+
+        // --- NEW: Helper to add history entry ---
+        const addHistoryEntry = (leadId, actionType, details = '') => {
+            const lead = leads.value.find(l => l.id === leadId);
+            if (lead) {
+                if (!lead.history) { // Just in case an old lead didn't get it from loadLeads
+                    lead.history = [];
+                }
+                lead.history.push({
+                    date: new Date().toISOString(),
+                    actionType: actionType,
+                    details: details
+                });
+                saveLeads(); // Save leads after adding history
+            }
+        };
+        // --- END NEW: Helper to add history entry ---
+
+
+        // --- TEMPLATE FUNCTIONS ---
+        const loadTemplates = () => {
+            const storedTemplates = localStorage.getItem('whatsappTemplates');
+            if (storedTemplates) {
+                whatsappTemplates.value = JSON.parse(storedTemplates);
+            }
+        };
+
+        const saveTemplates = () => {
+            localStorage.setItem('whatsappTemplates', JSON.stringify(whatsappTemplates.value));
+        };
+
+        const addTemplate = () => {
+            if (!templateName.value || !templateContent.value) {
+                alert('Please enter both template name and content.');
+                return;
+            }
+            whatsappTemplates.value.push({
+                id: Date.now(),
+                name: templateName.value,
+                content: templateContent.value
+            });
+            saveTemplates();
+            templateName.value = '';
+            templateContent.value = '';
+            alert('Template added successfully!');
+        };
+
+        const editTemplate = (template) => {
+            currentEditingTemplate.value = { ...template };
+            templateName.value = template.name;
+            templateContent.value = template.content;
+        };
+
+        const saveEditedTemplate = () => {
+            if (!templateName.value || !templateContent.value) {
+                alert('Please enter both template name and content.');
+                return;
+            }
+            const index = whatsappTemplates.value.findIndex(t => t.id === currentEditingTemplate.value.id);
+            if (index !== -1) {
+                whatsappTemplates.value[index].name = templateName.value;
+                whatsappTemplates.value[index].content = templateContent.value;
+                saveTemplates();
+                cancelEditTemplate();
+                alert('Template updated successfully!');
+            }
+        };
+
+        const cancelEditTemplate = () => {
+            currentEditingTemplate.value = null;
+            templateName.value = '';
+            templateContent.value = '';
+        };
+
+        const deleteTemplate = (id) => {
+            if (confirm('Are you sure you want to delete this template?')) {
+                whatsappTemplates.value = whatsappTemplates.value.filter(t => t.id !== id);
+                saveTemplates();
+                alert('Template deleted successfully.');
+            }
+        };
+        // --- END TEMPLATE FUNCTIONS ---
+
+
+        // Function to add a new lead
+        const addLead = () => {
+          if (!newLead.value.name || !newLead.value.service || !newLead.value.status || !newLead.value.priority) {
+            alert('Please fill all required fields for the new lead.');
+            return;
+          }
+
+          let formattedWhatsappLink = newLead.value.whatsappLink.trim();
+          if (formattedWhatsappLink) {
+              let cleanedNumber = formattedWhatsappLink.replace(/^[^\d+]+/, '');
+              cleanedNumber = cleanedNumber.replace(/[\s-]/g, '');
+
+              if (/^\+?\d+$/.test(cleanedNumber)) {
+                  if (!cleanedNumber.startsWith('+') && !cleanedNumber.startsWith('91')) {
+                      cleanedNumber = '91' + cleanedNumber;
+                  } else if (cleanedNumber.startsWith('+')) {
+                    cleanedNumber = cleanedNumber.substring(1);
+                  }
+                  newLead.value.whatsappLink = `https://wa.me/${cleanedNumber}`;
+              } else if (!(formattedWhatsappLink.startsWith('http://') || formattedWhatsappLink.startsWith('https://'))) {
+                  newLead.value.whatsappLink = `https://${formattedWhatsappLink}`;
+              }
+          }
+
+
+          newLead.value.id = Date.now();
+          newLead.value.createdDate = new Date().toISOString();
+
+          // NEW: Add lead creation to history before pushing
+          const leadCopy = { ...newLead.value }; // Create a copy to ensure history starts correctly
+          leadCopy.history.push({
+            date: leadCopy.createdDate,
+            actionType: 'Lead Created',
+            details: `New lead created with status: ${leadCopy.status}`
+          });
+          leads.value.push(leadCopy); // Add the lead with initial history
+          saveLeads();
+
+          newLead.value = {
+            id: null,
+            name: '',
+            service: '',
+            status: '',
+            priority: '',
+            followupDateTime: '',
+            whatsappLink: '',
+            createdDate: new Date().toISOString(),
+            history: [] // Reset history for next new lead
+          };
+          alert('Lead added successfully!');
+        };
+
+        // --- Computed Properties for Follow-ups ---
+        const todayFollowups = computed(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayString = today.toISOString().slice(0, 10);
+
+          return leads.value.filter(lead => {
+            if (!lead.followupDateTime) return false;
+            const leadDate = new Date(lead.followupDateTime);
+            leadDate.setHours(0, 0, 0, 0);
+            return leadDate.toISOString().slice(0, 10) === todayString;
+          });
+        });
+
+        const overdueFollowups = computed(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          return leads.value.filter(lead => {
+            if (!lead.followupDateTime) return false;
+            const leadDate = new Date(lead.followupDateTime);
+            leadDate.setHours(0, 0, 0, 0);
+
+            return leadDate < today &&
+                   lead.status !== 'Converted' &&
+                   lead.status !== 'Not Interested';
+          });
+        });
+
+        const upcomingFollowups = computed(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          return leads.value.filter(lead => {
+            if (!lead.followupDateTime) return false;
+            const leadDate = new Date(lead.followupDateTime);
+            leadDate.setHours(0, 0, 0, 0);
+
+            return leadDate > today;
+          });
+        });
+        // --- End Computed Properties ---
+
+        const exportToCSV = () => {
+          const allLeads = JSON.parse(localStorage.getItem('leads') || '[]');
+          if (!allLeads.length) {
+            alert('❌ No leads to export!');
+            return;
+          }
+
+          // Added History column (will stringify the array)
+          const csvHeader = ['Name','Service','Status','FollowupDateTime','WhatsAppLink','CreatedDate','Priority', 'History'];
+          const csvRows = [csvHeader.join(',')];
+
+          allLeads.forEach(lead => {
+            const row = [
+              lead.name,
+              lead.service,
+              lead.status,
+              lead.followupDateTime,
+              lead.whatsappLink,
+              lead.createdDate,
+              lead.priority,
+              JSON.stringify(lead.history || []) // Stringify history array for CSV
+            ].map(val => `"${(val || '').replace(/"/g, '""')}"`).join(',');
+            csvRows.push(row);
+          });
+
+          const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'lexuscare-backup.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+
+        const downloadManualBackup = () => {
+          exportToCSV();
+        };
+
+        const updateStatus = (lead) => {
+          alert('Update status for ' + lead.name + ' - (Functionality to be added)');
+          // NEW: Placeholder for history logging when functionality is added
+          // addHistoryEntry(lead.id, 'Status Update Initiated', `Attempted to update status for ${lead.name}`);
+        };
+
+        const editLead = (lead) => {
+          alert('Edit lead ' + lead.name + ' - (Functionality to be added)');
+          // NEW: Placeholder for history logging when functionality is added
+          // addHistoryEntry(lead.id, 'Edit Initiated', `Attempted to edit lead ${lead.name}`);
+        };
+
+        const deleteLead = (leadToDelete) => {
+          if (confirm(`Are you sure you want to delete ${leadToDelete.name}?`)) {
+            leads.value = leads.value.filter(lead => lead.id !== leadToDelete.id);
+            saveLeads();
+            alert('Lead deleted successfully.');
+          }
+        };
+
+        const openWhatsApp = (lead) => {
+            if (!lead.whatsappLink) {
+                alert('No WhatsApp link/number provided for this lead.');
+                return;
+            }
+            selectedLeadForWhatsapp.value = lead;
+            selectedTemplateId.value = '';
+            messageToSend.value = '';
+            showWhatsappModal.value = true;
+        };
+
+        const closeWhatsappModal = () => {
+            showWhatsappModal.value = false;
+            selectedLeadForWhatsapp.value = null;
+            selectedTemplateId.value = '';
+            messageToSend.value = '';
+        };
+
+        const applyTemplate = () => {
+            if (selectedTemplateId.value) {
+                const template = whatsappTemplates.value.find(t => t.id === selectedTemplateId.value);
+                if (template && selectedLeadForWhatsapp.value) {
+                    messageToSend.value = template.content.replace(/{leadName}/g, selectedLeadForWhatsapp.value.name);
+                }
+            } else {
+                messageToSend.value = '';
+            }
+        };
+
+        watch(selectedTemplateId, (newVal) => {
+            if (newVal) {
+                applyTemplate();
+            }
+        });
+
+        const sendWhatsappWithMessage = () => {
+            if (!selectedLeadForWhatsapp.value || !selectedLeadForWhatsapp.value.whatsappLink) {
+                alert('Cannot send WhatsApp: Lead or WhatsApp link is missing.');
+                return;
+            }
+
+            let fullLink = selectedLeadForWhatsapp.value.whatsappLink;
+            let historyDetails = `Sent message`;
+
+            if (messageToSend.value) {
+                const encodedMessage = encodeURIComponent(messageToSend.value);
+                if (fullLink.includes('?text=')) {
+                    fullLink = fullLink.split('?text=')[0] + `?text=${encodedMessage}`;
+                } else if (fullLink.includes('&text=')) {
+                    fullLink = fullLink.split('&text=')[0] + `&text=${encodedMessage}`;
+                }
+                else {
+                    fullLink += `?text=${encodedMessage}`;
+                }
+                historyDetails += `: "${messageToSend.value.substring(0, 50)}..."`; // Log first 50 chars
+            }
+
+            window.open(fullLink, '_blank');
+            // NEW: Log history when message is sent
+            addHistoryEntry(selectedLeadForWhatsapp.value.id, 'WhatsApp Sent', historyDetails);
+            closeWhatsappModal();
+        };
+
+        const sendDirectWhatsapp = () => {
+            if (!selectedLeadForWhatsapp.value || !selectedLeadForWhatsapp.value.whatsappLink) {
+                alert('Cannot send WhatsApp: Lead or WhatsApp link is missing.');
+                return;
+            }
+            window.open(selectedLeadForWhatsapp.value.whatsappLink, '_blank');
+            // NEW: Log history when direct WhatsApp is opened
+            addHistoryEntry(selectedLeadForWhatsapp.value.id, 'WhatsApp Direct Opened', 'Opened WhatsApp chat directly (no message sent from CRM).');
+            closeWhatsappModal();
+        };
+
+        // Helper function to format date for display
+        const formatDate = (dateString, type = 'long') => {
+            if (!dateString) return 'N/A';
+            const options = type === 'long' ? { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' } : { month: 'numeric', year: 'numeric' };
+            try {
+                return new Date(dateString).toLocaleString('en-US', options);
+            } catch (e) {
+                return dateString;
+            }
+        };
+
+        // Load leads and templates when the component is mounted
+        onMounted(() => {
+          loadLeads();
+          loadTemplates();
+        });
+
+        return {
+          leads,
+          newLead,
+          addLead,
+          exportToCSV,
+          downloadManualBackup,
+          updateStatus,
+          editLead,
+          deleteLead,
+          openWhatsApp,
+          formatDate,
+          todayFollowups,
+          overdueFollowups,
+          upcomingFollowups,
+          whatsappTemplates,
+          templateName,
+          templateContent,
+          currentEditingTemplate,
+          addTemplate,
+          editTemplate,
+          saveEditedTemplate,
+          cancelEditTemplate,
+          deleteTemplate,
+          showWhatsappModal,
+          selectedLeadForWhatsapp,
+          selectedTemplateId,
+          messageToSend,
+          closeWhatsappModal,
+          applyTemplate,
+          sendWhatsappWithMessage,
+          sendDirectWhatsapp
+          // No need to expose addHistoryEntry directly to template
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
