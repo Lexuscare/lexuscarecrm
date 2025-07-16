@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add New Lead</title>
+  <link rel="icon" href="favicon.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff0f5;
+      padding: 30px;
+    }
+    h2 {
+      color: #d63384;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #7b2cbf;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #5a189a;
+    }
+  </style>
+</head>
+<body>
+  <h2>➕ Add New Lead</h2>
+  <form id="leadForm">
+    <label>Name</label>
+    <input type="text" id="name" required />
+
+    <label>Phone</label>
+    <input type="tel" id="phone" required />
+
+    <label>Service</label>
+    <select id="service" required>
+      <option value="">-- Select Service --</option>
+      <option value="Eyebrow Microblading">Eyebrow Microblading</option>
+      <option value="Lip Tinting/Neutralisation">Lip Tinting/Neutralisation</option>
+      <option value="Hair Extensions">Hair Extensions</option>
+      <option value="Laser Hair Removal">Laser Hair Removal</option>
+      <option value="Skin Treatments">Skin Treatments</option>
+    </select>
+
+    <label>Follow-up Date & Time</label>
+    <input type="datetime-local" id="followupDateTime" required />
+
+    <label>Status</label>
+    <select id="status" required>
+      <option value="">-- Select Status --</option>
+      <option value="Interested">Interested</option>
+      <option value="Not Interested">Not Interested</option>
+      <option value="Not Answered">Not Answered</option>
+      <option value="Booked">Booked</option>
+    </select>
+
+    <button type="submit">✅ Save Lead</button>
+  </form>
+
+  <!-- Firebase + Firestore -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB8LyRyV5c7RoUx5H_v5pxdzDUJvDPx0m4",
+      authDomain: "lexuscare-crm.firebaseapp.com",
+      projectId: "lexuscare-crm",
+      storageBucket: "lexuscare-crm.firebasestorage.app",
+      messagingSenderId: "867403802789",
+      appId: "1:867403802789:web:f0f46bc3a98bef08edc54c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("leadForm");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const lead = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        service: document.getElementById("service").value,
+        followupDateTime: document.getElementById("followupDateTime").value,
+        status: document.getElementById("status").value,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        await addDoc(collection(db, "leads"), lead);
+        alert("✅ Lead saved successfully!");
+        window.location.href = "index.html"; // redirect back to dashboard
+      } catch (err) {
+        alert("❌ Failed to save lead: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

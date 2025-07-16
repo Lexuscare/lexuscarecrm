@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Templates</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff0f5;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+
+    h1 {
+      color: #b03060;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #6a1b9a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4a148c;
+    }
+
+    .template {
+      background-color: #fce4ec;
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .template p {
+      margin: 5px 0;
+    }
+
+    .delete-btn {
+      background-color: crimson;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💬 WhatsApp Message Templates</h1>
+
+  <label for="templateName">Template Name:</label>
+  <input type="text" id="templateName" placeholder="Ex: Appointment Reminder"/>
+
+  <label for="templateMsg">Template Message:</label>
+  <textarea id="templateMsg" rows="4" placeholder="Enter message here..."></textarea>
+
+  <button onclick="saveTemplate()">➕ Save Template</button>
+
+  <h2>📋 Saved Templates:</h2>
+  <div id="templatesList"></div>
+
+  <script>
+    function saveTemplate() {
+      const name = document.getElementById("templateName").value.trim();
+      const msg = document.getElementById("templateMsg").value.trim();
+      if (!name || !msg) {
+        alert("Please enter both name and message");
+        return;
+      }
+
+      const templates = JSON.parse(localStorage.getItem("whatsappTemplates") || "[]");
+      templates.push({ name, msg });
+      localStorage.setItem("whatsappTemplates", JSON.stringify(templates));
+
+      document.getElementById("templateName").value = "";
+      document.getElementById("templateMsg").value = "";
+      displayTemplates();
+    }
+
+    function deleteTemplate(index) {
+      const templates = JSON.parse(localStorage.getItem("whatsappTemplates") || "[]");
+      templates.splice(index, 1);
+      localStorage.setItem("whatsappTemplates", JSON.stringify(templates));
+      displayTemplates();
+    }
+
+    function displayTemplates() {
+      const templates = JSON.parse(localStorage.getItem("whatsappTemplates") || "[]");
+      const listDiv = document.getElementById("templatesList");
+      listDiv.innerHTML = "";
+
+      if (templates.length === 0) {
+        listDiv.innerHTML = "<p>No templates saved yet.</p>";
+        return;
+      }
+
+      templates.forEach((template, index) => {
+        const div = document.createElement("div");
+        div.className = "template";
+        div.innerHTML = `
+          <p><strong>${template.name}</strong></p>
+          <p>${template.msg}</p>
+          <button class="delete-btn" onclick="deleteTemplate(${index})">🗑️ Delete</button>
+        `;
+        listDiv.appendChild(div);
+      });
+    }
+
+    // On page load
+    displayTemplates();
+  </script>
+</body>
+</html>
