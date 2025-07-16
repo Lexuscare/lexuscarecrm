@@ -3,35 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Add New Lead</title>
-  <link rel="icon" href="favicon.png" />
+  <title>Add New Lead - LexusCare CRM</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fff0f5;
+      background-color: #fff0f6;
       padding: 30px;
     }
     h2 {
       color: #d63384;
     }
-    label {
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 5px;
-      font-weight: bold;
+    form {
+      max-width: 400px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
     }
     input, select {
       width: 100%;
       padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 6px;
+      margin: 10px 0;
       border: 1px solid #ccc;
+      border-radius: 6px;
     }
     button {
       background-color: #7b2cbf;
       color: white;
-      padding: 12px 20px;
       border: none;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -41,40 +44,29 @@
   </style>
 </head>
 <body>
-  <h2>➕ Add New Lead</h2>
+  <h2>Add New Lead</h2>
   <form id="leadForm">
-    <label>Name</label>
-    <input type="text" id="name" required />
-
-    <label>Phone</label>
-    <input type="tel" id="phone" required />
-
-    <label>Service</label>
-    <select id="service" required>
-      <option value="">-- Select Service --</option>
+    <input type="text" id="name" placeholder="Customer Name" required />
+    <input type="text" id="phone" placeholder="Phone Number" required />
+    <select id="service">
+      <option value="">Select Service</option>
       <option value="Eyebrow Microblading">Eyebrow Microblading</option>
       <option value="Lip Tinting/Neutralisation">Lip Tinting/Neutralisation</option>
       <option value="Hair Extensions">Hair Extensions</option>
       <option value="Laser Hair Removal">Laser Hair Removal</option>
       <option value="Skin Treatments">Skin Treatments</option>
     </select>
-
-    <label>Follow-up Date & Time</label>
-    <input type="datetime-local" id="followupDateTime" required />
-
-    <label>Status</label>
-    <select id="status" required>
-      <option value="">-- Select Status --</option>
+    <select id="status">
       <option value="Interested">Interested</option>
       <option value="Not Interested">Not Interested</option>
       <option value="Not Answered">Not Answered</option>
       <option value="Booked">Booked</option>
     </select>
-
-    <button type="submit">✅ Save Lead</button>
+    <input type="datetime-local" id="followupDateTime" required />
+    <button type="submit">➕ Add Lead</button>
   </form>
 
-  <!-- Firebase + Firestore -->
+  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
@@ -91,27 +83,30 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const form = document.getElementById("leadForm");
-
-    form.addEventListener("submit", async (e) => {
+    document.getElementById("leadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const lead = {
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        service: document.getElementById("service").value,
-        followupDateTime: document.getElementById("followupDateTime").value,
-        status: document.getElementById("status").value,
-        createdAt: new Date().toISOString()
-      };
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const service = document.getElementById("service").value;
+      const status = document.getElementById("status").value;
+      const followupDateTime = document.getElementById("followupDateTime").value;
 
-      try {
-        await addDoc(collection(db, "leads"), lead);
-        alert("✅ Lead saved successfully!");
-        window.location.href = "index.html"; // redirect back to dashboard
-      } catch (err) {
-        alert("❌ Failed to save lead: " + err.message);
+      if (!name || !phone || !service || !status || !followupDateTime) {
+        alert("Please fill all fields.");
+        return;
       }
+
+      await addDoc(collection(db, "leads"), {
+        name,
+        phone,
+        service,
+        status,
+        followupDateTime
+      });
+
+      alert("✅ Lead Added Successfully!");
+      document.getElementById("leadForm").reset();
     });
   </script>
 </body>
